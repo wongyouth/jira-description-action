@@ -66,6 +66,7 @@ export namespace JIRA {
     self: string;
     fields: {
       summary: string;
+      description?: string;
       status: IssueStatus;
       priority: IssuePriority;
       issuetype: IssueType;

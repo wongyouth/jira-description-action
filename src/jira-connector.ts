@@ -16,7 +16,7 @@ export class JiraConnector {
     const encodedToken = Buffer.from(JIRA_TOKEN).toString('base64');
 
     this.client = axios.create({
-      baseURL: `${JIRA_BASE_URL}/rest/api/3`,
+      baseURL: `${JIRA_BASE_URL}/rest/api/2`,
       timeout: 2000,
       headers: { Authorization: `Basic ${encodedToken}` },
     });
@@ -36,7 +36,7 @@ export class JiraConnector {
       return {
         key,
         summary,
-        description: typeof description === 'string' ? description : undefined,
+        description,
         url: `${this.JIRA_BASE_URL}/browse/${key}`,
         type: {
           name: type.name,
