@@ -31,6 +31,8 @@ export class JiraConnector {
         fields: { issuetype: type, project, summary, description },
       } = issue;
 
+      console.log('description', description);
+
       return {
         key,
         summary,
