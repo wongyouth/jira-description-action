@@ -28,12 +28,13 @@ export class JiraConnector {
     try {
       const issue: JIRA.Issue = await this.getIssue(key);
       const {
-        fields: { issuetype: type, project, summary },
+        fields: { issuetype: type, project, summary, description },
       } = issue;
 
       return {
         key,
         summary,
+        description: typeof description === 'string' ? description : undefined,
         url: `${this.JIRA_BASE_URL}/browse/${key}`,
         type: {
           name: type.name,
@@ -45,19 +46,20 @@ export class JiraConnector {
           key: project.key,
         },
       };
-    } catch (error) {
+    } catch (error: unknown) {
       console.log(
         'Error fetching details from JIRA. Please check if token you provide is built correctly & API key has all needed permissions. https://github.com/cakeinpanic/jira-description-action#jira-token'
       );
-      if (error.response) {
-        throw new Error(JSON.stringify(error.response.data, null, 4));
+      if (error && typeof error === 'object' && 'response' in error) {
+        const axiosError = error as { response: { data: unknown } };
+        throw new Error(JSON.stringify(axiosError.response.data, null, 4));
       }
       throw error;
     }
   }
 
   async getIssue(id: string): Promise<JIRA.Issue> {
-    const url = `/issue/${id}?fields=project,summary,issuetype`;
+    const url = `/issue/${id}?fields=project,summary,issuetype,description`;
     const response = await this.client.get<JIRA.Issue>(url);
     return response.data;
   }

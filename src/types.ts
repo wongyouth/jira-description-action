@@ -79,6 +79,7 @@ export namespace JIRA {
 export interface JIRADetails {
   key: string;
   summary: string;
+  description?: string;
   url: string;
   type: {
     name: string;
