@@ -48,7 +48,7 @@ export class JiraConnector {
           key: project.key,
         },
       };
-    } catch (error: unknown) {
+    } catch (error) {
       console.log(
         'Error fetching details from JIRA. Please check if token you provide is built correctly & API key has all needed permissions. https://github.com/cakeinpanic/jira-description-action#jira-token'
       );
