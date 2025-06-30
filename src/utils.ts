@@ -100,9 +100,13 @@ export const buildPRDescription = (details: JIRADetails) => {
   const convertedDescription = details.description ? convertJiraMarkupToMarkdown(details.description) : '';
 
   return `<table><tbody><tr><td>
-  ### <a href="${details.url}" title="${displayKey}" target="_blank"><img alt="${details.type.name}" src="${details.type.icon}" /> ${displayKey}</a>
-  ${details.summary}
-
-  ${convertedDescription}
+  <details>
+    <summary>
+      <a href="${details.url}" title="${displayKey}" target="_blank"><img alt="${details.type.name}" src="${details.type.icon}" /> ${displayKey}</a>
+      ${details.summary}
+    </summary>
+    <br/>
+${convertedDescription}
+  </details>
 </td></tr></tbody></table>`;
 };

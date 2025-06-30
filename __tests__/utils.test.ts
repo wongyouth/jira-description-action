@@ -133,10 +133,14 @@ describe('buildPRDescription()', () => {
     };
 
     expect(buildPRDescription(details)).toEqual(`<table><tbody><tr><td>
-  ### <a href="example.com/ABC-123" title="ABC-123" target="_blank"><img alt="story" src="icon.png" /> ABC-123</a>
-  Sample summary
-
-  This is a sample description for the JIRA issue. It contains details about the task and what needs to be accomplished.
+  <details>
+    <summary>
+      <a href="example.com/ABC-123" title="ABC-123" target="_blank"><img alt="story" src="icon.png" /> ABC-123</a>
+      Sample summary
+    </summary>
+    <br/>
+This is a sample description for the JIRA issue. It contains details about the task and what needs to be accomplished.
+  </details>
 </td></tr></tbody></table>`);
   });
 
@@ -173,10 +177,13 @@ h4. Column 3 {color:#FF5630}*[ NEW ]*{color}
     };
 
     expect(buildPRDescription(details)).toEqual(`<table><tbody><tr><td>
-  ### <a href="example.com/ABC-123" title="ABC-123" target="_blank"><img alt="story" src="icon.png" /> ABC-123</a>
-  Sample summary
-
-  #### Column 1
+  <details>
+    <summary>
+      <a href="example.com/ABC-123" title="ABC-123" target="_blank"><img alt="story" src="icon.png" /> ABC-123</a>
+      Sample summary
+    </summary>
+    <br/>
+#### Column 1
 
   - Campus：**[ REFERRING NOW. ]**
   - Primary：**[ REFERRING NOW. ]**
@@ -192,6 +199,7 @@ h4. Column 3 {color:#FF5630}*[ NEW ]*{color}
   - Payment
   - Invoice Status
     - Outstanding、Support multiple selection, all displayed(the picture is just an example of showing
+  </details>
 </td></tr></tbody></table>`);
   });
 });
