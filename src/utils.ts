@@ -53,6 +53,30 @@ const escapeRegexp = (str: string): string => {
   return str.replace(/[\\^$.|?*+(<>)[{]/g, '\\$&');
 };
 
+const convertJiraMarkupToMarkdown = (jiraText: string): string => {
+  if (!jiraText) return jiraText;
+
+  let markdown = jiraText;
+
+  // Convert headings: h1. -> #, h2. -> ##, h3. -> ###, h4. -> ####, h5. -> #####, h6. -> ######
+  markdown = markdown.replace(/^h([1-6])\.\s*/gm, (_, level) => '#'.repeat(parseInt(level)) + ' ');
+
+  // Convert color formatting: {color:#color}text{color} -> text (remove colors for now)
+  markdown = markdown.replace(/\{color:[^}]*\}(.*?)\{color\}/g, '$1');
+
+  // Convert bold text: *text* -> **text** (but only if it's not part of a list)
+  markdown = markdown.replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, '**$1**');
+
+  // Convert lists: * -> - for first level, ** ->   - for second level, etc.
+  markdown = markdown.replace(/^(\*+)\s/gm, (_, stars) => {
+    const level = stars.length;
+    const indent = '  '.repeat(level - 1);
+    return indent + '- ';
+  });
+
+  return markdown;
+};
+
 export const getPRDescription = (oldBody: string, details: string): string => {
   const hiddenMarkerStartRg = escapeRegexp(HIDDEN_MARKER_START);
   const hiddenMarkerEndRg = escapeRegexp(HIDDEN_MARKER_END);
@@ -73,10 +97,12 @@ ${HIDDEN_MARKER_END}
 
 export const buildPRDescription = (details: JIRADetails) => {
   const displayKey = details.key.toUpperCase();
+  const convertedDescription = details.description ? convertJiraMarkupToMarkdown(details.description) : '';
+
   return `<table><tbody><tr><td>
   ### <a href="${details.url}" title="${displayKey}" target="_blank"><img alt="${details.type.name}" src="${details.type.icon}" /> ${displayKey}</a>
   ${details.summary}
 
-  ${details.description}
+  ${convertedDescription}
 </td></tr></tbody></table>`;
 };

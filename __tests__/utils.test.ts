@@ -139,4 +139,59 @@ describe('buildPRDescription()', () => {
   This is a sample description for the JIRA issue. It contains details about the task and what needs to be accomplished.
 </td></tr></tbody></table>`);
   });
+
+  it('should convert JIRA markup to Markdown format', () => {
+    const details: JIRADetails = {
+      key: 'ABC-123',
+      summary: 'Sample summary',
+      description: `h4. Column 1
+
+* Campus：{color:#36B37E}*[ REFERRING NOW. ]*{color}
+* Primary：{color:#36B37E}*[ REFERRING NOW. ]*{color}
+* Middle：{color:#36B37E}*[ REFERRING NOW. ]*{color}
+* Secondary：{color:#36B37E}*[ REFERRING NOW. ]*{color}
+
+h4. Column 2
+
+* -Tags：-{color:#97A0AF}*[ HOLD ]*{color}
+
+h4. Column 3 {color:#FF5630}*[ NEW ]*{color}
+
+* Payment
+** Invoice Status
+*** Outstanding{color:#ff5630}、Support multiple selection, all displayed{color}(the picture is just an example of showing`,
+      url: 'example.com/ABC-123',
+      type: {
+        name: 'story',
+        icon: 'icon.png',
+      },
+      project: {
+        name: 'name',
+        url: 'url',
+        key: 'key',
+      },
+    };
+
+    expect(buildPRDescription(details)).toEqual(`<table><tbody><tr><td>
+  ### <a href="example.com/ABC-123" title="ABC-123" target="_blank"><img alt="story" src="icon.png" /> ABC-123</a>
+  Sample summary
+
+  #### Column 1
+
+  - Campus：**[ REFERRING NOW. ]**
+  - Primary：**[ REFERRING NOW. ]**
+  - Middle：**[ REFERRING NOW. ]**
+  - Secondary：**[ REFERRING NOW. ]**
+
+#### Column 2
+
+  - -Tags：-**[ HOLD ]**
+
+#### Column 3 **[ NEW ]**
+
+  - Payment
+  - Invoice Status
+    - Outstanding、Support multiple selection, all displayed(the picture is just an example of showing
+</td></tr></tbody></table>`);
+  });
 });
