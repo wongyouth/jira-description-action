@@ -113,6 +113,7 @@ export const buildPRDescription = (details: JIRADetails) => {
       ${details.summary}
     </summary>
     <br/>
+
 ${convertedDescription}
   </details>
 </td></tr></tbody></table>`;

@@ -139,6 +139,7 @@ describe('buildPRDescription()', () => {
       Sample summary
     </summary>
     <br/>
+
 This is a sample description for the JIRA issue. It contains details about the task and what needs to be accomplished.
   </details>
 </td></tr></tbody></table>`);
@@ -183,6 +184,7 @@ h4. Column 3 {color:#FF5630}*[ NEW ]*{color}
       Sample summary
     </summary>
     <br/>
+
 #### Column 1
 
   - Campus：**[ REFERRING NOW. ]**
@@ -233,6 +235,7 @@ h4. Column 3 {color:#FF5630}*[ NEW ]*{color}
       Sample summary
     </summary>
     <br/>
+
 #### Ordered List Example
 
 1. First level item
