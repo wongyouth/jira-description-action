@@ -486,4 +486,52 @@ function hello() {
   </details>
 </td></tr></tbody></table>`);
   });
+
+  it('should convert JIRA table with multi-line cells and formatting', () => {
+    const details: JIRADetails = {
+      key: 'ABC-123',
+      summary: 'Sample summary',
+      description: `h4. Multi-line Table Example
+
+|*Version*|*Function*|*Tickets*|*Priority*|*Estimate*|*School / Note*|
+| |Update|# To be invoice[https://fariaedu.atlassian.net/browse/OA-24993|https://fariaedu.atlassian.net/browse/OA-24993|smart-link]
+# Field update[https://fariaedu.atlassian.net/browse/OA-23952|https://fariaedu.atlassian.net/browse/OA-23952|smart-link]|​​​{color:#FF5630}*[ HIGT ]*{color}| |[https://fariaedu.atlassian.net/browse/OA-24368|https://fariaedu.atlassian.net/browse/OA-24368|smart-link]|
+| |Filter|[https://fariaedu.atlassian.net/browse/OA-24337|https://fariaedu.atlassian.net/browse/OA-24337|smart-link]
+[https://fariaedu.atlassian.net/browse/OA-22908|https://fariaedu.atlassian.net/browse/OA-22908|smart-link]|{color:#FF991F}*[ NORMAL ]*{color}
+{color:#FF5630}*[ HIGT ]*{color}| | |`,
+      url: 'example.com/ABC-123',
+      type: {
+        name: 'story',
+        icon: 'icon.png',
+      },
+      project: {
+        name: 'name',
+        url: 'url',
+        key: 'key',
+      },
+    };
+
+    expect(buildPRDescription(details)).toEqual(`<table><tbody><tr><td>
+  <details>
+    <summary>
+      <a href="example.com/ABC-123" title="ABC-123" target="_blank"><img alt="story" src="icon.png" /> ABC-123</a>
+      Sample summary
+    </summary>
+    <br/>
+
+#### Multi-line Table Example
+
+<table>
+<tbody>
+<tr><td>**Version**</td><td>**Function**</td><td>**Tickets**</td><td>**Priority**</td><td>**Estimate**</td><td>**School / Note**</td></tr>
+<tr><td></td><td>Update</td><td>1. To be invoice[https://fariaedu.atlassian.net/browse/OA-24993](https://fariaedu.atlassian.net/browse/OA-24993)
+1. Field update[https://fariaedu.atlassian.net/browse/OA-23952](https://fariaedu.atlassian.net/browse/OA-23952)</td><td>​​​<span style="color:#FF5630">**[ HIGT ]**</span></td><td></td><td>[https://fariaedu.atlassian.net/browse/OA-24368](https://fariaedu.atlassian.net/browse/OA-24368)</td></tr>
+<tr><td></td><td>Filter</td><td>[https://fariaedu.atlassian.net/browse/OA-24337](https://fariaedu.atlassian.net/browse/OA-24337)
+[https://fariaedu.atlassian.net/browse/OA-22908](https://fariaedu.atlassian.net/browse/OA-22908)</td><td><span style="color:#FF991F">**[ NORMAL ]**</span>
+<span style="color:#FF5630">**[ HIGT ]**</span></td><td></td><td></td></tr>
+</tbody>
+</table>
+  </details>
+</td></tr></tbody></table>`);
+  });
 });

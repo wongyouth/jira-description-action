@@ -53,46 +53,163 @@ const escapeRegexp = (str: string): string => {
   return str.replace(/[\\^$.|?*+(<>)[{]/g, '\\$&');
 };
 
-const convertJiraTableToHtml = (text: string): string => {
+// Helper to split a JIRA table row into cells, ignoring | inside [] or {}
+function splitJiraTableRow(row: string): string[] {
+  const cells: string[] = [];
+  let current = '';
+  let bracketDepth = 0;
+  let braceDepth = 0;
+  for (let i = 0; i < row.length; i++) {
+    const char = row[i];
+    if (char === '[') bracketDepth++;
+    if (char === ']') bracketDepth = Math.max(0, bracketDepth - 1);
+    if (char === '{') braceDepth++;
+    if (char === '}') braceDepth = Math.max(0, braceDepth - 1);
+    if (char === '|' && bracketDepth === 0 && braceDepth === 0) {
+      cells.push(current);
+      current = '';
+    } else {
+      current += char;
+    }
+  }
+  cells.push(current);
+  return cells;
+}
+
+const convertJiraTableToHtml = (text: string): { html: string; cellPlaceholders: string[] } => {
+  // Preprocess: merge continuation lines with their table rows
   const lines = text.split('\n');
+  const processedLines: string[] = [];
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const trimmedLine = line.trim();
+    const isTableRow = /^\|[^|]/.test(line) || trimmedLine.startsWith('||');
+
+    if (isTableRow) {
+      // Start of a table row - collect all continuation lines
+      let fullRow = line;
+      let j = i + 1;
+      while (j < lines.length) {
+        const nextLine = lines[j];
+        const nextTrimmed = nextLine.trim();
+        const isNextTableRow = /^\|[^|]/.test(nextLine) || nextTrimmed.startsWith('||');
+        const isContinuation = !isNextTableRow && !nextTrimmed.startsWith('|') && nextTrimmed !== '';
+
+        if (isContinuation) {
+          fullRow += '\n' + nextLine;
+          j++;
+        } else {
+          break;
+        }
+      }
+      processedLines.push(fullRow);
+      i = j - 1; // Skip the continuation lines we just processed
+    } else {
+      processedLines.push(line);
+    }
+  }
+
   const convertedLines: string[] = [];
   let inTable = false;
   let tableRows: string[] = [];
   let hasHeader = false;
+  let currentRow: string[] = [];
+  let placeholderIndex = 0;
+  let allPlaceholders: string[] = [];
+  let expectedColCount = 0;
 
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
+  for (let i = 0; i < processedLines.length; i++) {
+    const line = processedLines[i];
+    const trimmedLine = line.trim();
+    const isTableRow = /^\|[^|]/.test(line) || trimmedLine.startsWith('||');
 
     // Check if this is a table header row (starts with ||)
-    if (line.trim().startsWith('||')) {
+    if (trimmedLine.startsWith('||')) {
       if (!inTable) {
         inTable = true;
         tableRows = [];
         hasHeader = true;
+        currentRow = [];
+        placeholderIndex = 0;
       }
-
-      // Parse header row
-      const headers = line.split('||').filter((cell) => cell.trim() !== '');
-      const headerCells = headers.map((header) => `<th>${header.trim()}</th>`).join('');
-      tableRows.push(`<tr>${headerCells}</tr>`);
-    } else if (line.trim().startsWith('|') && inTable) {
-      // Parse data row
-      const cells = line.split('|').filter((cell) => cell.trim() !== '');
-      const dataCells = cells.map((cell) => `<td>${cell.trim()}</td>`).join('');
-      tableRows.push(`<tr>${dataCells}</tr>`);
-    } else if (line.trim().startsWith('|') && !inTable) {
-      // Start a new table without header
+      // If currentRow has content, push it to tableRows before starting a new row
+      if (currentRow.length > 0) {
+        // Pad row if needed
+        while (currentRow.length < expectedColCount) {
+          currentRow.push('<td></td>');
+        }
+        tableRows.push(`<tr>${currentRow.join('')}</tr>`);
+        currentRow = [];
+      }
+      let parts = splitJiraTableRow(line.replace(/^\|\|/, '').replace(/\|\|$/, ''));
+      parts = parts.filter((cell) => cell.trim() !== '');
+      expectedColCount = parts.length;
+      for (let j = 0; j < parts.length; j++) {
+        const cell = parts[j].trim();
+        const placeholder = `JIRACELL${placeholderIndex}`;
+        allPlaceholders.push(cell);
+        currentRow.push(`<th>${placeholder}</th>`);
+        placeholderIndex++;
+      }
+      continue;
+    } else if (isTableRow && inTable) {
+      // If currentRow has content, push it to tableRows before starting a new row
+      if (currentRow.length > 0) {
+        // Pad row if needed
+        while (currentRow.length < expectedColCount) {
+          currentRow.push('<td></td>');
+        }
+        tableRows.push(`<tr>${currentRow.join('')}</tr>`);
+        currentRow = [];
+      }
+      let parts = splitJiraTableRow(line.replace(/^\|/, '').replace(/\|$/, ''));
+      if (expectedColCount === 0) expectedColCount = parts.length;
+      for (let j = 0; j < parts.length; j++) {
+        let cell = parts[j].trim();
+        const placeholder = `JIRACELL${placeholderIndex}`;
+        allPlaceholders.push(cell);
+        currentRow.push(`<td>${placeholder}</td>`);
+        placeholderIndex++;
+      }
+      continue;
+    } else if (isTableRow && !inTable) {
       inTable = true;
       tableRows = [];
       hasHeader = false;
-
-      // Parse data row
-      const cells = line.split('|').filter((cell) => cell.trim() !== '');
-      const dataCells = cells.map((cell) => `<td>${cell.trim()}</td>`).join('');
-      tableRows.push(`<tr>${dataCells}</tr>`);
+      currentRow = [];
+      placeholderIndex = 0;
+      // If currentRow has content, push it to tableRows before starting a new row
+      if (currentRow.length > 0) {
+        // Pad row if needed
+        while (currentRow.length < expectedColCount) {
+          currentRow.push('<td></td>');
+        }
+        tableRows.push(`<tr>${currentRow.join('')}</tr>`);
+        currentRow = [];
+      }
+      let parts = splitJiraTableRow(line.replace(/^\|/, '').replace(/\|$/, ''));
+      expectedColCount = parts.length;
+      for (let j = 0; j < parts.length; j++) {
+        let cell = parts[j].trim();
+        const placeholder = `JIRACELL${placeholderIndex}`;
+        allPlaceholders.push(cell);
+        currentRow.push(`<td>${placeholder}</td>`);
+        placeholderIndex++;
+      }
+      continue;
     } else {
       // Not a table row
       if (inTable) {
+        // If currentRow has content, push it to tableRows before ending the table
+        if (currentRow.length > 0) {
+          // Pad row if needed
+          while (currentRow.length < expectedColCount) {
+            currentRow.push('<td></td>');
+          }
+          tableRows.push(`<tr>${currentRow.join('')}</tr>`);
+          currentRow = [];
+        }
         // End the table
         convertedLines.push('<table>');
         if (hasHeader && tableRows.length > 0) {
@@ -115,6 +232,9 @@ const convertJiraTableToHtml = (text: string): string => {
         inTable = false;
         tableRows = [];
         hasHeader = false;
+        currentRow = [];
+        placeholderIndex = 0;
+        expectedColCount = 0;
       }
       convertedLines.push(line);
     }
@@ -122,6 +242,15 @@ const convertJiraTableToHtml = (text: string): string => {
 
   // Handle table at end of text
   if (inTable) {
+    // If currentRow has content, push it to tableRows before ending the table
+    if (currentRow.length > 0) {
+      // Pad row if needed
+      while (currentRow.length < expectedColCount) {
+        currentRow.push('<td></td>');
+      }
+      tableRows.push(`<tr>${currentRow.join('')}</tr>`);
+      currentRow = [];
+    }
     convertedLines.push('<table>');
     if (hasHeader && tableRows.length > 0) {
       convertedLines.push('<thead>');
@@ -142,7 +271,7 @@ const convertJiraTableToHtml = (text: string): string => {
     convertedLines.push('</table>');
   }
 
-  return convertedLines.join('\n');
+  return { html: convertedLines.join('\n'), cellPlaceholders: allPlaceholders };
 };
 
 const convertJiraMarkupToMarkdown = (jiraText: string): string => {
@@ -157,14 +286,36 @@ const convertJiraMarkupToMarkdown = (jiraText: string): string => {
     return `JIRACODEBLOCK${codeBlocks.length - 1}`;
   });
 
+  // Convert JIRA tables: ||header|| and |cell| -> HTML table (before formatting conversions)
+  let tableResult = convertJiraTableToHtml(markdown);
+  markdown = tableResult.html;
+
+  // Restore cell content from placeholders and apply formatting (immediately after table HTML)
+  if (tableResult.cellPlaceholders.length > 0) {
+    for (let i = 0; i < tableResult.cellPlaceholders.length; i++) {
+      let cellContent = tableResult.cellPlaceholders[i];
+      // Apply formatting conversions to cell content
+      cellContent = cellContent.replace(/\[(https?:\/\/[^|\]]+)\|\1\|smart-link\]/g, '[$1]($1)');
+      cellContent = cellContent.replace(/\[([^\]|\[]+?)\|([^\]|\[]+?)\]/g, '[$1]($2)');
+      cellContent = cellContent.replace(/\{color:([^}]+)\}([\s\S]*?)\{color\}/g, '<span style="color:$1">$2</span>');
+      cellContent = cellContent.replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, '**$1**');
+      cellContent = cellContent.replace(/(?<!_)_([^_]+)_(?!_)/g, '*$1*');
+      // Ordered list conversion for table cells
+      cellContent = cellContent.replace(/^(#+)\s/gm, (_, hashes) => {
+        const level = hashes.length;
+        const indent = '  '.repeat(level - 1);
+        return indent + '1. ';
+      });
+      markdown = markdown.replace(`JIRACELL${i}`, cellContent);
+    }
+  }
+
+  // Now apply all other formatting conversions
   // Convert JIRA smart links: [url|url|smart-link] -> [url](url)
   markdown = markdown.replace(/\[(https?:\/\/[^|\]]+)\|\1\|smart-link\]/g, '[$1]($1)');
 
   // Convert JIRA links: [text|url] -> [text](url)
   markdown = markdown.replace(/\[([^\]|\[]+?)\|([^\]|\[]+?)\]/g, '[$1]($2)');
-
-  // Convert JIRA tables: ||header|| and |cell| -> HTML table
-  markdown = convertJiraTableToHtml(markdown);
 
   // Convert ordered lists: # -> 1., ## ->   1., ### ->     1., etc. (must be first to avoid conflict with headings)
   markdown = markdown.replace(/^(#{1,6})\s/gm, (_, hashes) => {
@@ -192,7 +343,7 @@ const convertJiraMarkupToMarkdown = (jiraText: string): string => {
     return indent + '- ';
   });
 
-  // Step 2: Restore code blocks as Markdown code blocks
+  // Step 2: Restore code blocks as Markdown code blocks (after all formatting)
   markdown = markdown.replace(/JIRACODEBLOCK(\d+)/g, (_, idx) => {
     const code = codeBlocks[parseInt(idx, 10)].replace(/^\n+|\n+$/g, '');
     return `\`\`\`\n${code}\n\`\`\``;
