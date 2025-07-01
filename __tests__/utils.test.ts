@@ -246,4 +246,42 @@ h4. Column 3 {color:#FF5630}*[ NEW ]*{color}
   </details>
 </td></tr></tbody></table>`);
   });
+
+  it('should convert JIRA italic text to Markdown format', () => {
+    const details: JIRADetails = {
+      key: 'ABC-123',
+      summary: 'Sample summary',
+      description: `h4. Text Formatting Example
+
+This is _italic text_ and this is *bold text*.
+Here's some _more italic_ and *more bold* text.
+This text has _italic_ and *bold* mixed together.`,
+      url: 'example.com/ABC-123',
+      type: {
+        name: 'story',
+        icon: 'icon.png',
+      },
+      project: {
+        name: 'name',
+        url: 'url',
+        key: 'key',
+      },
+    };
+
+    expect(buildPRDescription(details)).toEqual(`<table><tbody><tr><td>
+  <details>
+    <summary>
+      <a href="example.com/ABC-123" title="ABC-123" target="_blank"><img alt="story" src="icon.png" /> ABC-123</a>
+      Sample summary
+    </summary>
+    <br/>
+
+#### Text Formatting Example
+
+This is *italic text* and this is **bold text**.
+Here's some *more italic* and **more bold** text.
+This text has *italic* and **bold** mixed together.
+  </details>
+</td></tr></tbody></table>`);
+  });
 });

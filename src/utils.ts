@@ -74,6 +74,9 @@ const convertJiraMarkupToMarkdown = (jiraText: string): string => {
   // Convert bold text: *text* -> **text** (but only if it's not part of a list)
   markdown = markdown.replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, '**$1**');
 
+  // Convert italic text: _text_ -> *text*
+  markdown = markdown.replace(/(?<!_)_([^_]+)_(?!_)/g, '*$1*');
+
   // Convert lists: * -> - for first level, ** ->   - for second level, etc.
   markdown = markdown.replace(/^(\*+)\s/gm, (_, stars) => {
     const level = stars.length;
