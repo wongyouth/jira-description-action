@@ -139,7 +139,7 @@ describe('buildPRDescription()', () => {
       Sample summary
     </summary>
 
-    <ul><li>abc</li></ul>
+<ul><li>abc</li></ul>
   </details>
 </td></tr></tbody></table>`);
   });

@@ -80,7 +80,7 @@ export const buildPRDescription = (details: JIRADetails) => {
       ${details.summary}
     </summary>
 
-    ${details.description}
+${details.description}
   </details>
 </td></tr></tbody></table>`;
 };
