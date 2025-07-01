@@ -400,4 +400,50 @@ Here's some <span style="color:#97A0AF">gray text</span> mixed with normal text.
   </details>
 </td></tr></tbody></table>`);
   });
+
+  it('should convert JIRA code block markup to HTML pre and code tags', () => {
+    const details: JIRADetails = {
+      key: 'ABC-123',
+      summary: 'Sample summary',
+      description: `h4. Code Example
+
+{noformat}
+# coding
+this is code line
+function hello() {
+    console.log("Hello World");
+}
+{noformat}`,
+      url: 'example.com/ABC-123',
+      type: {
+        name: 'story',
+        icon: 'icon.png',
+      },
+      project: {
+        name: 'name',
+        url: 'url',
+        key: 'key',
+      },
+    };
+
+    expect(buildPRDescription(details)).toEqual(`<table><tbody><tr><td>
+  <details>
+    <summary>
+      <a href="example.com/ABC-123" title="ABC-123" target="_blank"><img alt="story" src="icon.png" /> ABC-123</a>
+      Sample summary
+    </summary>
+    <br/>
+
+#### Code Example
+
+\`\`\`
+# coding
+this is code line
+function hello() {
+    console.log("Hello World");
+}
+\`\`\`
+  </details>
+</td></tr></tbody></table>`);
+  });
 });

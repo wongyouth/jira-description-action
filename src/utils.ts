@@ -121,6 +121,13 @@ const convertJiraMarkupToMarkdown = (jiraText: string): string => {
 
   let markdown = jiraText;
 
+  // Step 1: Extract code blocks and replace with placeholders
+  const codeBlocks: string[] = [];
+  markdown = markdown.replace(/\{noformat\}([\s\S]*?)\{noformat\}/g, (_, code) => {
+    codeBlocks.push(code);
+    return `JIRACODEBLOCK${codeBlocks.length - 1}`;
+  });
+
   // Convert JIRA smart links: [url|url|smart-link] -> [url](url)
   markdown = markdown.replace(/\[(https?:\/\/[^|\]]+)\|\1\|smart-link\]/g, '[$1]($1)');
 
@@ -154,6 +161,12 @@ const convertJiraMarkupToMarkdown = (jiraText: string): string => {
     const level = stars.length;
     const indent = '  '.repeat(level - 1);
     return indent + '- ';
+  });
+
+  // Step 2: Restore code blocks as Markdown code blocks
+  markdown = markdown.replace(/JIRACODEBLOCK(\d+)/g, (_, idx) => {
+    const code = codeBlocks[parseInt(idx, 10)].replace(/^\n+|\n+$/g, '');
+    return `\`\`\`\n${code}\n\`\`\``;
   });
 
   return markdown;
