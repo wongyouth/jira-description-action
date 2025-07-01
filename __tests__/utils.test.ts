@@ -119,6 +119,7 @@ describe('buildPRDescription()', () => {
     const details: JIRADetails = {
       key: 'ABC-123',
       summary: 'Sample summary',
+      description: '<ul><li>abc</li></ul>',
       url: 'example.com/ABC-123',
       type: {
         name: 'story',
@@ -134,6 +135,8 @@ describe('buildPRDescription()', () => {
     expect(buildPRDescription(details)).toEqual(`<table><tbody><tr><td>
   <a href="example.com/ABC-123" title="ABC-123" target="_blank"><img alt="story" src="icon.png" /> ABC-123</a>
   Sample summary
+
+  <ul><li>abc</li></ul>
 </td></tr></tbody></table>`);
   });
 });
