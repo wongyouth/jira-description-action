@@ -53,6 +53,69 @@ const escapeRegexp = (str: string): string => {
   return str.replace(/[\\^$.|?*+(<>)[{]/g, '\\$&');
 };
 
+const convertJiraTableToHtml = (text: string): string => {
+  const lines = text.split('\n');
+  const convertedLines: string[] = [];
+  let inTable = false;
+  let tableRows: string[] = [];
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+
+    // Check if this is a table header row (starts with ||)
+    if (line.trim().startsWith('||')) {
+      if (!inTable) {
+        inTable = true;
+        tableRows = [];
+      }
+
+      // Parse header row
+      const headers = line.split('||').filter((cell) => cell.trim() !== '');
+      const headerCells = headers.map((header) => `<th>${header.trim()}</th>`).join('');
+      tableRows.push(`<tr>${headerCells}</tr>`);
+    } else if (line.trim().startsWith('|') && inTable) {
+      // Parse data row
+      const cells = line.split('|').filter((cell) => cell.trim() !== '');
+      const dataCells = cells.map((cell) => `<td>${cell.trim()}</td>`).join('');
+      tableRows.push(`<tr>${dataCells}</tr>`);
+    } else {
+      // Not a table row
+      if (inTable) {
+        // End the table
+        convertedLines.push('<table>');
+        convertedLines.push('<thead>');
+        convertedLines.push(tableRows[0]); // Header row
+        convertedLines.push('</thead>');
+        convertedLines.push('<tbody>');
+        for (let j = 1; j < tableRows.length; j++) {
+          convertedLines.push(tableRows[j]);
+        }
+        convertedLines.push('</tbody>');
+        convertedLines.push('</table>');
+        inTable = false;
+        tableRows = [];
+      }
+      convertedLines.push(line);
+    }
+  }
+
+  // Handle table at end of text
+  if (inTable) {
+    convertedLines.push('<table>');
+    convertedLines.push('<thead>');
+    convertedLines.push(tableRows[0]); // Header row
+    convertedLines.push('</thead>');
+    convertedLines.push('<tbody>');
+    for (let j = 1; j < tableRows.length; j++) {
+      convertedLines.push(tableRows[j]);
+    }
+    convertedLines.push('</tbody>');
+    convertedLines.push('</table>');
+  }
+
+  return convertedLines.join('\n');
+};
+
 const convertJiraMarkupToMarkdown = (jiraText: string): string => {
   if (!jiraText) return jiraText;
 
@@ -63,6 +126,9 @@ const convertJiraMarkupToMarkdown = (jiraText: string): string => {
 
   // Convert JIRA links: [text|url] -> [text](url)
   markdown = markdown.replace(/\[([^\]|\[]+?)\|([^\]|\[]+?)\]/g, '[$1]($2)');
+
+  // Convert JIRA tables: ||header|| and |cell| -> HTML table
+  markdown = convertJiraTableToHtml(markdown);
 
   // Convert ordered lists: # -> 1., ## ->   1., ### ->     1., etc. (must be first to avoid conflict with headings)
   markdown = markdown.replace(/^(#{1,6})\s/gm, (_, hashes) => {

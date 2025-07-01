@@ -356,4 +356,48 @@ Here's some <span style="color:#97A0AF">gray text</span> mixed with normal text.
   </details>
 </td></tr></tbody></table>`);
   });
+
+  it('should convert JIRA table markup to HTML table format', () => {
+    const details: JIRADetails = {
+      key: 'ABC-123',
+      summary: 'Sample summary',
+      description: `h4. Table Example
+
+||*h1*||*h2*||*h3*||
+|r11|r12|r13|
+|r21|r22|r23|`,
+      url: 'example.com/ABC-123',
+      type: {
+        name: 'story',
+        icon: 'icon.png',
+      },
+      project: {
+        name: 'name',
+        url: 'url',
+        key: 'key',
+      },
+    };
+
+    expect(buildPRDescription(details)).toEqual(`<table><tbody><tr><td>
+  <details>
+    <summary>
+      <a href="example.com/ABC-123" title="ABC-123" target="_blank"><img alt="story" src="icon.png" /> ABC-123</a>
+      Sample summary
+    </summary>
+    <br/>
+
+#### Table Example
+
+<table>
+<thead>
+<tr><th>**h1**</th><th>**h2**</th><th>**h3**</th></tr>
+</thead>
+<tbody>
+<tr><td>r11</td><td>r12</td><td>r13</td></tr>
+<tr><td>r21</td><td>r22</td><td>r23</td></tr>
+</tbody>
+</table>
+  </details>
+</td></tr></tbody></table>`);
+  });
 });
