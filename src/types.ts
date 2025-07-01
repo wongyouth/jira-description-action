@@ -66,13 +66,15 @@ export namespace JIRA {
     self: string;
     fields: {
       summary: string;
-      description: string;
       status: IssueStatus;
       priority: IssuePriority;
       issuetype: IssueType;
       project: IssueProject;
       labels: string[];
       [k: string]: unknown;
+    };
+    renderedFields: {
+      description: string;
     };
   }
 }
