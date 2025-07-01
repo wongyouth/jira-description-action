@@ -58,6 +58,12 @@ const convertJiraMarkupToMarkdown = (jiraText: string): string => {
 
   let markdown = jiraText;
 
+  // Convert JIRA smart links: [url|url|smart-link] -> [url](url)
+  markdown = markdown.replace(/\[(https?:\/\/[^|\]]+)\|\1\|smart-link\]/g, '[$1]($1)');
+
+  // Convert JIRA links: [text|url] -> [text](url)
+  markdown = markdown.replace(/\[([^\]|\[]+?)\|([^\]|\[]+?)\]/g, '[$1]($2)');
+
   // Convert ordered lists: # -> 1., ## ->   1., ### ->     1., etc. (must be first to avoid conflict with headings)
   markdown = markdown.replace(/^(#{1,6})\s/gm, (_, hashes) => {
     const level = hashes.length;
@@ -68,8 +74,8 @@ const convertJiraMarkupToMarkdown = (jiraText: string): string => {
   // Convert headings: h1. -> #, h2. -> ##, h3. -> ###, h4. -> ####, h5. -> #####, h6. -> ######
   markdown = markdown.replace(/^h([1-6])\.\s*/gm, (_, level) => '#'.repeat(parseInt(level)) + ' ');
 
-  // Convert color formatting: {color:#color}text{color} -> text (remove colors for now)
-  markdown = markdown.replace(/\{color:[^}]*\}(.*?)\{color\}/g, '$1');
+  // Convert color formatting: {color:#color}text{color} -> <span style="color:#color">text</span>
+  markdown = markdown.replace(/\{color:([^}]+)\}([\s\S]*?)\{color\}/g, '<span style="color:$1">$2</span>');
 
   // Convert bold text: *text* -> **text** (but only if it's not part of a list)
   markdown = markdown.replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, '**$1**');

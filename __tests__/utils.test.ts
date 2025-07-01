@@ -187,20 +187,20 @@ h4. Column 3 {color:#FF5630}*[ NEW ]*{color}
 
 #### Column 1
 
-  - Campus：**[ REFERRING NOW. ]**
-  - Primary：**[ REFERRING NOW. ]**
-  - Middle：**[ REFERRING NOW. ]**
-  - Secondary：**[ REFERRING NOW. ]**
+  - Campus：<span style="color:#36B37E">**[ REFERRING NOW. ]**</span>
+  - Primary：<span style="color:#36B37E">**[ REFERRING NOW. ]**</span>
+  - Middle：<span style="color:#36B37E">**[ REFERRING NOW. ]**</span>
+  - Secondary：<span style="color:#36B37E">**[ REFERRING NOW. ]**</span>
 
 #### Column 2
 
-  - -Tags：-**[ HOLD ]**
+  - -Tags：-<span style="color:#97A0AF">**[ HOLD ]**</span>
 
-#### Column 3 **[ NEW ]**
+#### Column 3 <span style="color:#FF5630">**[ NEW ]**</span>
 
   - Payment
   - Invoice Status
-    - Outstanding、Support multiple selection, all displayed(the picture is just an example of showing
+    - Outstanding<span style="color:#ff5630">、Support multiple selection, all displayed</span>(the picture is just an example of showing
   </details>
 </td></tr></tbody></table>`);
   });
@@ -281,6 +281,78 @@ This text has _italic_ and *bold* mixed together.`,
 This is *italic text* and this is **bold text**.
 Here's some *more italic* and **more bold** text.
 This text has *italic* and **bold** mixed together.
+  </details>
+</td></tr></tbody></table>`);
+  });
+
+  it('should convert JIRA links to Markdown format', () => {
+    const details: JIRADetails = {
+      key: 'ABC-123',
+      summary: 'Sample summary',
+      description: `h4. Link Example
+
+[Google|https://google.com]
+[https://fariaedu.atlassian.net/browse/OA-25099|https://fariaedu.atlassian.net/browse/OA-25099|smart-link]`,
+      url: 'example.com/ABC-123',
+      type: {
+        name: 'story',
+        icon: 'icon.png',
+      },
+      project: {
+        name: 'name',
+        url: 'url',
+        key: 'key',
+      },
+    };
+
+    expect(buildPRDescription(details)).toEqual(`<table><tbody><tr><td>
+  <details>
+    <summary>
+      <a href="example.com/ABC-123" title="ABC-123" target="_blank"><img alt="story" src="icon.png" /> ABC-123</a>
+      Sample summary
+    </summary>
+    <br/>
+
+#### Link Example
+
+[Google](https://google.com)
+[https://fariaedu.atlassian.net/browse/OA-25099](https://fariaedu.atlassian.net/browse/OA-25099)
+  </details>
+</td></tr></tbody></table>`);
+  });
+
+  it('should convert JIRA color markup to HTML span tags', () => {
+    const details: JIRADetails = {
+      key: 'ABC-123',
+      summary: 'Sample summary',
+      description: `h4. Color Example
+
+This is {color:#36B37E}green text{color} and this is {color:#FF5630}red text{color}.
+Here's some {color:#97A0AF}gray text{color} mixed with normal text.`,
+      url: 'example.com/ABC-123',
+      type: {
+        name: 'story',
+        icon: 'icon.png',
+      },
+      project: {
+        name: 'name',
+        url: 'url',
+        key: 'key',
+      },
+    };
+
+    expect(buildPRDescription(details)).toEqual(`<table><tbody><tr><td>
+  <details>
+    <summary>
+      <a href="example.com/ABC-123" title="ABC-123" target="_blank"><img alt="story" src="icon.png" /> ABC-123</a>
+      Sample summary
+    </summary>
+    <br/>
+
+#### Color Example
+
+This is <span style="color:#36B37E">green text</span> and this is <span style="color:#FF5630">red text</span>.
+Here's some <span style="color:#97A0AF">gray text</span> mixed with normal text.
   </details>
 </td></tr></tbody></table>`);
   });
