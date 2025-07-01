@@ -202,4 +202,45 @@ h4. Column 3 {color:#FF5630}*[ NEW ]*{color}
   </details>
 </td></tr></tbody></table>`);
   });
+
+  it('should convert JIRA ordered lists to Markdown format', () => {
+    const details: JIRADetails = {
+      key: 'ABC-123',
+      summary: 'Sample summary',
+      description: `h4. Ordered List Example
+
+# First level item
+## Second level item
+### Third level item
+# Another first level item
+## Another second level item`,
+      url: 'example.com/ABC-123',
+      type: {
+        name: 'story',
+        icon: 'icon.png',
+      },
+      project: {
+        name: 'name',
+        url: 'url',
+        key: 'key',
+      },
+    };
+
+    expect(buildPRDescription(details)).toEqual(`<table><tbody><tr><td>
+  <details>
+    <summary>
+      <a href="example.com/ABC-123" title="ABC-123" target="_blank"><img alt="story" src="icon.png" /> ABC-123</a>
+      Sample summary
+    </summary>
+    <br/>
+#### Ordered List Example
+
+1. First level item
+  1. Second level item
+    1. Third level item
+1. Another first level item
+  1. Another second level item
+  </details>
+</td></tr></tbody></table>`);
+  });
 });

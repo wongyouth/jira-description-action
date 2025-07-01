@@ -58,6 +58,13 @@ const convertJiraMarkupToMarkdown = (jiraText: string): string => {
 
   let markdown = jiraText;
 
+  // Convert ordered lists: # -> 1., ## ->   1., ### ->     1., etc. (must be first to avoid conflict with headings)
+  markdown = markdown.replace(/^(#{1,6})\s/gm, (_, hashes) => {
+    const level = hashes.length;
+    const indent = '  '.repeat(level - 1);
+    return indent + '1. ';
+  });
+
   // Convert headings: h1. -> #, h2. -> ##, h3. -> ###, h4. -> ####, h5. -> #####, h6. -> ######
   markdown = markdown.replace(/^h([1-6])\.\s*/gm, (_, level) => '#'.repeat(parseInt(level)) + ' ');
 
