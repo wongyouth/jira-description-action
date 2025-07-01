@@ -58,6 +58,7 @@ const convertJiraTableToHtml = (text: string): string => {
   const convertedLines: string[] = [];
   let inTable = false;
   let tableRows: string[] = [];
+  let hasHeader = false;
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
@@ -67,6 +68,7 @@ const convertJiraTableToHtml = (text: string): string => {
       if (!inTable) {
         inTable = true;
         tableRows = [];
+        hasHeader = true;
       }
 
       // Parse header row
@@ -78,22 +80,41 @@ const convertJiraTableToHtml = (text: string): string => {
       const cells = line.split('|').filter((cell) => cell.trim() !== '');
       const dataCells = cells.map((cell) => `<td>${cell.trim()}</td>`).join('');
       tableRows.push(`<tr>${dataCells}</tr>`);
+    } else if (line.trim().startsWith('|') && !inTable) {
+      // Start a new table without header
+      inTable = true;
+      tableRows = [];
+      hasHeader = false;
+
+      // Parse data row
+      const cells = line.split('|').filter((cell) => cell.trim() !== '');
+      const dataCells = cells.map((cell) => `<td>${cell.trim()}</td>`).join('');
+      tableRows.push(`<tr>${dataCells}</tr>`);
     } else {
       // Not a table row
       if (inTable) {
         // End the table
         convertedLines.push('<table>');
-        convertedLines.push('<thead>');
-        convertedLines.push(tableRows[0]); // Header row
-        convertedLines.push('</thead>');
-        convertedLines.push('<tbody>');
-        for (let j = 1; j < tableRows.length; j++) {
-          convertedLines.push(tableRows[j]);
+        if (hasHeader && tableRows.length > 0) {
+          convertedLines.push('<thead>');
+          convertedLines.push(tableRows[0]); // Header row
+          convertedLines.push('</thead>');
+          convertedLines.push('<tbody>');
+          for (let j = 1; j < tableRows.length; j++) {
+            convertedLines.push(tableRows[j]);
+          }
+          convertedLines.push('</tbody>');
+        } else {
+          convertedLines.push('<tbody>');
+          for (let j = 0; j < tableRows.length; j++) {
+            convertedLines.push(tableRows[j]);
+          }
+          convertedLines.push('</tbody>');
         }
-        convertedLines.push('</tbody>');
         convertedLines.push('</table>');
         inTable = false;
         tableRows = [];
+        hasHeader = false;
       }
       convertedLines.push(line);
     }
@@ -102,14 +123,22 @@ const convertJiraTableToHtml = (text: string): string => {
   // Handle table at end of text
   if (inTable) {
     convertedLines.push('<table>');
-    convertedLines.push('<thead>');
-    convertedLines.push(tableRows[0]); // Header row
-    convertedLines.push('</thead>');
-    convertedLines.push('<tbody>');
-    for (let j = 1; j < tableRows.length; j++) {
-      convertedLines.push(tableRows[j]);
+    if (hasHeader && tableRows.length > 0) {
+      convertedLines.push('<thead>');
+      convertedLines.push(tableRows[0]); // Header row
+      convertedLines.push('</thead>');
+      convertedLines.push('<tbody>');
+      for (let j = 1; j < tableRows.length; j++) {
+        convertedLines.push(tableRows[j]);
+      }
+      convertedLines.push('</tbody>');
+    } else {
+      convertedLines.push('<tbody>');
+      for (let j = 0; j < tableRows.length; j++) {
+        convertedLines.push(tableRows[j]);
+      }
+      convertedLines.push('</tbody>');
     }
-    convertedLines.push('</tbody>');
     convertedLines.push('</table>');
   }
 
