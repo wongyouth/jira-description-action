@@ -440,6 +440,10 @@ describe('buildPRDescription()', () => {
       },
     };
 
+    // Mock console.warn to prevent warnings in test output
+    const originalWarn = console.warn;
+    console.warn = jest.fn();
+
     // Mock fetch to return fake image data and GitHub API failure
     const originalFetch = global.fetch;
     global.fetch = jest.fn().mockImplementation((url: string) => {
@@ -490,9 +494,13 @@ describe('buildPRDescription()', () => {
 
       // Verify that fetch was called for image and failed comment creation
       expect(global.fetch).toHaveBeenCalledTimes(2); // 1 image + 1 failed comment creation
+
+      // Verify that console.warn was called for the fallback
+      expect(console.warn).toHaveBeenCalledWith(expect.stringContaining('Failed to upload image to GitHub, falling back to base64'));
     } finally {
-      // Restore original fetch
+      // Restore original fetch and console.warn
       global.fetch = originalFetch;
+      console.warn = originalWarn;
     }
   });
 
@@ -513,12 +521,24 @@ describe('buildPRDescription()', () => {
       },
     };
 
-    const result = await buildPRDescription(details);
+    // Mock console.warn to prevent warnings in test output
+    const originalWarn = console.warn;
+    console.warn = jest.fn();
 
-    // Verify that the description was truncated
-    expect(result.length).toBeLessThanOrEqual(60 * 1024 + 1000); // Allow some buffer for HTML structure
-    expect(result).toContain('[Description truncated due to size limit]');
-    expect(result).toContain('ABC-123');
+    try {
+      const result = await buildPRDescription(details);
+
+      // Verify that the description was truncated
+      expect(result.length).toBeLessThanOrEqual(60 * 1024 + 1000); // Allow some buffer for HTML structure
+      expect(result).toContain('[Description truncated due to size limit]');
+      expect(result).toContain('ABC-123');
+
+      // Verify that console.warn was called for the truncation
+      expect(console.warn).toHaveBeenCalledWith(expect.stringContaining('PR description is too large'));
+    } finally {
+      // Restore original console.warn
+      console.warn = originalWarn;
+    }
   });
 
   it('should handle large images within the 65,535 character comment limit', async () => {

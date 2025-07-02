@@ -9,7 +9,7 @@ module.exports = {
   },
   verbose: false,
   collectCoverage: true,
-  moduleNameMapping: {
+  moduleNameMapper: {
     '^sharp$': '<rootDir>/__mocks__/sharp.js',
   },
 };
