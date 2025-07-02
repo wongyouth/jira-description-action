@@ -406,7 +406,7 @@ describe('buildPRDescription()', () => {
     });
 
     try {
-      const result = await buildPRDescription(details, 'https://jira.example.com', 'fake-token', 'github-token', 'owner', 'repo', 123);
+      const result = await buildPRDescription(details, 'https://jira.example.com', 'fake-token');
 
       // Verify that image paths were replaced with GitHub user-images URLs
       expect(result).toContain('https://user-images.githubusercontent.com/');
@@ -485,7 +485,7 @@ describe('buildPRDescription()', () => {
     });
 
     try {
-      const result = await buildPRDescription(details, 'https://jira.example.com', 'fake-token', 'github-token', 'owner', 'repo', 123);
+      const result = await buildPRDescription(details, 'https://jira.example.com', 'fake-token');
 
       // Verify that the image was embedded as base64 (fallback)
       expect(result).toContain('data:image/png;base64,');
@@ -529,7 +529,7 @@ describe('buildPRDescription()', () => {
       const result = await buildPRDescription(details);
 
       // Verify that the description was truncated
-      expect(result.length).toBeLessThanOrEqual(60 * 1024 + 1000); // Allow some buffer for HTML structure
+      expect(result.length).toBeLessThanOrEqual(65535); // GitHub's PR description character limit
       expect(result).toContain('[Description truncated due to size limit]');
       expect(result).toContain('ABC-123');
 
@@ -606,15 +606,15 @@ describe('buildPRDescription()', () => {
     });
 
     try {
-      const result = await buildPRDescription(details, 'https://jira.example.com', 'fake-token', 'github-token', 'owner', 'repo', 123);
+      const result = await buildPRDescription(details, 'https://jira.example.com', 'fake-token');
 
-      // Verify that the large image was uploaded via temporary comment
-      expect(result).toContain('https://user-images.githubusercontent.com/');
-      expect(result).not.toContain('data:image/png;base64,');
+      // Verify that the large image was embedded as base64
+      expect(result).toContain('data:image/png;base64,');
+      expect(result).not.toContain('/rest/api/3/attachment/content/999999');
       expect(result).toContain('large-test.png');
 
-      // Verify that fetch was called for image, comment creation, and comment deletion
-      expect(global.fetch).toHaveBeenCalledTimes(3);
+      // Verify that fetch was called only for the image download
+      expect(global.fetch).toHaveBeenCalledTimes(1);
     } finally {
       // Restore original fetch
       global.fetch = originalFetch;
