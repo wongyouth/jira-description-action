@@ -71,16 +71,79 @@ ${HIDDEN_MARKER_END}
   return jiraDetailsMessage + oldBody;
 };
 
-export const buildPRDescription = (details: JIRADetails) => {
+export const buildPRDescription = async (details: JIRADetails, jiraBaseUrl?: string, jiraToken?: string) => {
   const displayKey = details.key.toUpperCase();
+
+  // Process images if JIRA credentials are provided
+  let processedDescription = details.description;
+  if (jiraBaseUrl && jiraToken && details.description) {
+    processedDescription = await processJiraImages(details.description, jiraBaseUrl, jiraToken);
+  }
+
   return `<table><tbody><tr><td>
   <details>
     <summary>
       <a href="${details.url}" title="${displayKey}" target="_blank"><img alt="${details.type.name}" src="${details.type.icon}" /> ${displayKey}</a>
       ${details.summary}
     </summary>
+    <br/>
 
-${details.description}
+${processedDescription}
   </details>
 </td></tr></tbody></table>`;
+};
+
+// Function to extract and replace JIRA image paths with embedded base64 data
+const processJiraImages = async (htmlDescription: string, jiraBaseUrl: string, jiraToken: string): Promise<string> => {
+  // Extract image paths from HTML
+  const imageRegex = /<img[^>]+src="([^"]*\/rest\/api\/[^"]*)"[^>]*>/gi;
+  const matches: RegExpExecArray[] = [];
+  let match;
+
+  while ((match = imageRegex.exec(htmlDescription)) !== null) {
+    matches.push(match);
+  }
+
+  if (matches.length === 0) {
+    return htmlDescription; // No images to process
+  }
+
+  let processedHtml = htmlDescription;
+
+  for (const match of matches) {
+    const fullImgTag = match[0];
+    const imagePath = match[1];
+
+    try {
+      // Download image from JIRA
+      const imageUrl = `${jiraBaseUrl}${imagePath}`;
+      const response = await fetch(imageUrl, {
+        headers: {
+          Authorization: `Basic ${Buffer.from(jiraToken).toString('base64')}`,
+        },
+      });
+
+      if (!response.ok) {
+        console.warn(`Failed to download image: ${imageUrl}`);
+        continue;
+      }
+
+      const imageBuffer = await response.arrayBuffer();
+      const imageData = Buffer.from(imageBuffer);
+
+      // Convert to base64 and embed directly in the HTML
+      const base64Data = imageData.toString('base64');
+      const mimeType = 'image/png'; // You might want to detect this from the response headers
+
+      // Replace the JIRA image path with embedded base64 data
+      const embeddedImgTag = fullImgTag.replace(imagePath, `data:${mimeType};base64,${base64Data}`);
+      processedHtml = processedHtml.replace(fullImgTag, embeddedImgTag);
+
+      console.log(`Embedded image: ${imagePath} (${imageData.length} bytes)`);
+    } catch (error) {
+      console.error(`Error processing image ${imagePath}:`, error);
+    }
+  }
+
+  return processedHtml;
 };

@@ -80,11 +80,15 @@ export class GithubConnector {
     const { number: prNumber = 0 } = this.githubData.pullRequest;
     const recentBody = await this.getLatestPRDescription({ repo, owner, number: this.githubData.pullRequest.number });
 
+    // Get JIRA credentials for image processing
+    const { JIRA_TOKEN, JIRA_BASE_URL } = getInputs();
+    const prDescription = await buildPRDescription(details, JIRA_BASE_URL, JIRA_TOKEN);
+
     const prData: RestEndpointMethodTypes['pulls']['update']['parameters'] = {
       owner,
       repo,
       pull_number: prNumber,
-      body: getPRDescription(recentBody, buildPRDescription(details)),
+      body: getPRDescription(recentBody, prDescription),
     };
 
     return await this.octokit.rest.pulls.update(prData);
