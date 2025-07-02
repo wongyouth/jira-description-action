@@ -34,7 +34,7 @@ export class JiraConnector {
 
       console.log('issue');
       console.dir(issue, { depth: null });
-      console.log('description', description);
+      console.log('description\n', description);
 
       return {
         key,

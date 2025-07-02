@@ -96,7 +96,7 @@ ${processedDescription}
 // Function to extract and replace JIRA image paths with embedded base64 data
 const processJiraImages = async (htmlDescription: string, jiraBaseUrl: string, jiraToken: string): Promise<string> => {
   // Extract image paths from HTML
-  const imageRegex = /<img[^>]+src="([^"]*\/rest\/api\/[^"]*)"[^>]*>/gi;
+  const imageRegex = /<img[^>]+src="(\/rest\/api\/[^"]*)"[^>]*>/gi;
   const matches: RegExpExecArray[] = [];
   let match;
 
@@ -113,6 +113,8 @@ const processJiraImages = async (htmlDescription: string, jiraBaseUrl: string, j
   for (const match of matches) {
     const fullImgTag = match[0];
     const imagePath = match[1];
+
+    console.log('found imagePath\n', imagePath);
 
     try {
       // Download image from JIRA
