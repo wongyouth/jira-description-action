@@ -10,6 +10,6 @@ module.exports = {
   verbose: false,
   collectCoverage: true,
   moduleNameMapper: {
-    '^sharp$': '<rootDir>/__mocks__/sharp.js',
+    '^jimp$': '<rootDir>/__mocks__/jimp.js',
   },
 };

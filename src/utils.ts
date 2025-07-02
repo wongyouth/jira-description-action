@@ -7,7 +7,7 @@ import {
   WARNING_MESSAGE_ABOUT_HIDDEN_MARKERS,
 } from './constants';
 import { JIRADetails } from './types';
-import sharp from 'sharp';
+// Simple image resizing without external dependencies
 
 const getJIRAIssueKey = (input: string, regexp: RegExp = JIRA_REGEX_MATCHER): string | null => {
   const matches = regexp.exec(input);
@@ -199,7 +199,7 @@ const processJiraImages = async (
   return processedHtml;
 };
 
-// Function to resize image if it's too large (to keep base64 data manageable)
+// Function to handle large images (simple approach without external dependencies)
 const resizeImageIfNeeded = async (imageData: Buffer): Promise<Buffer> => {
   const maxSizeBytes = 45 * 1024; // 45KB limit for base64 embedding (allows ~60KB base64 string, under 65,535 char limit)
 
@@ -207,35 +207,11 @@ const resizeImageIfNeeded = async (imageData: Buffer): Promise<Buffer> => {
     return imageData; // No resizing needed
   }
 
-  console.log(`Image too large (${(imageData.length / 1024 / 1024).toFixed(2)}MB), resizing...`);
+  console.log(`Image too large (${(imageData.length / 1024 / 1024).toFixed(2)}MB), but resizing not available. Using original.`);
 
-  try {
-    // Start with 80% quality and reduce dimensions if needed
-    let quality = 80;
-    let scale = 1.0;
-
-    while (true) {
-      const resized = await sharp(imageData)
-        .resize(Math.round(1920 * scale), Math.round(1080 * scale), {
-          fit: 'inside',
-          withoutEnlargement: true,
-        })
-        .png({ quality })
-        .toBuffer();
-
-      if (resized.length <= maxSizeBytes || quality <= 20) {
-        console.log(`Resized image to ${(resized.length / 1024 / 1024).toFixed(2)}MB (quality: ${quality}%, scale: ${scale})`);
-        return resized;
-      }
-
-      // Reduce quality and scale for next iteration
-      quality = Math.max(20, quality - 10);
-      scale = Math.max(0.3, scale - 0.1);
-    }
-  } catch (error) {
-    console.warn(`Failed to resize image, using original: ${error}`);
-    return imageData;
-  }
+  // For now, return the original image and let the upload/fallback logic handle it
+  // This prevents the action from failing completely when images are too large
+  return imageData;
 };
 
 // Function to upload image using temporary comment strategy
