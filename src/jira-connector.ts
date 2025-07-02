@@ -55,8 +55,9 @@ export class JiraConnector {
       console.log(
         'Error fetching details from JIRA. Please check if token you provide is built correctly & API key has all needed permissions. https://github.com/cakeinpanic/jira-description-action#jira-token'
       );
-      if (error.response) {
-        throw new Error(JSON.stringify(error.response.data, null, 4));
+      if (error && typeof error === 'object' && 'response' in error) {
+        const axiosError = error as { response: { data: unknown } };
+        throw new Error(JSON.stringify(axiosError.response.data, null, 4));
       }
       throw error;
     }
