@@ -84,6 +84,8 @@ export class GithubConnector {
     const { JIRA_TOKEN, JIRA_BASE_URL } = getInputs();
     const prDescription = await buildPRDescription(details, JIRA_BASE_URL, JIRA_TOKEN);
 
+    console.log('New jira Description\n', prDescription);
+
     const prData: RestEndpointMethodTypes['pulls']['update']['parameters'] = {
       owner,
       repo,
