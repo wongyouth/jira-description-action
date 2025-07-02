@@ -81,8 +81,8 @@ export class GithubConnector {
     const recentBody = await this.getLatestPRDescription({ repo, owner, number: this.githubData.pullRequest.number });
 
     // Get JIRA credentials for image processing
-    const { JIRA_TOKEN, JIRA_BASE_URL } = getInputs();
-    const prDescription = await buildPRDescription(details, JIRA_BASE_URL, JIRA_TOKEN);
+    const { JIRA_TOKEN, JIRA_BASE_URL, GITHUB_TOKEN } = getInputs();
+    const prDescription = await buildPRDescription(details, JIRA_BASE_URL, JIRA_TOKEN, GITHUB_TOKEN, owner, repo, prNumber);
 
     console.log('New jira Description\n', prDescription);
 

@@ -340,4 +340,264 @@ describe('buildPRDescription()', () => {
       console.warn = originalWarn;
     }
   });
+
+  it('should upload images to GitHub via temporary comments when credentials are provided', async () => {
+    const details: JIRADetails = {
+      key: 'ABC-123',
+      summary: 'Sample summary',
+      description: `<h4>GitHub Upload Example</h4>
+<p>Here is an image to upload:</p>
+<img src="/rest/api/3/attachment/content/999999" alt="upload-test.png" />`,
+      url: 'example.com/ABC-123',
+      type: {
+        name: 'story',
+        icon: 'icon.png',
+      },
+      project: {
+        name: 'name',
+        url: 'url',
+        key: 'key',
+      },
+    };
+
+    // Mock fetch to return fake image data and GitHub API responses
+    const originalFetch = global.fetch;
+    global.fetch = jest.fn().mockImplementation((url: string) => {
+      if (url.includes('/rest/api/3/attachment/content/999999')) {
+        // Create a fake image
+        const imageData = Buffer.from('fake-image-data');
+
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          statusText: 'OK',
+          headers: new Map([['content-type', 'image/png']]) as any,
+          redirected: false,
+          type: 'default' as ResponseType,
+          url: url,
+          arrayBuffer: () => Promise.resolve(imageData.buffer),
+          body: null,
+          bodyUsed: false,
+          clone: () => new Response(),
+          formData: () => Promise.resolve(new FormData()),
+          json: () => Promise.resolve({}),
+          text: () => Promise.resolve(''),
+          blob: () => Promise.resolve(new Blob()),
+        } as Response);
+      } else if (url.includes('/issues/123/comments')) {
+        // Mock GitHub comment creation response
+        return Promise.resolve({
+          ok: true,
+          status: 201,
+          json: () =>
+            Promise.resolve({
+              id: 12345,
+              body: '![jira-image-1234567890-abc123def.png](https://user-images.githubusercontent.com/1234567890/abc123def.png)',
+            }),
+        } as Response);
+      } else if (url.includes('/issues/comments/12345')) {
+        // Mock GitHub comment deletion response
+        return Promise.resolve({
+          ok: true,
+          status: 204,
+        } as Response);
+      }
+      return originalFetch(url);
+    });
+
+    try {
+      const result = await buildPRDescription(details, 'https://jira.example.com', 'fake-token', 'github-token', 'owner', 'repo', 123);
+
+      // Verify that image paths were replaced with GitHub user-images URLs
+      expect(result).toContain('https://user-images.githubusercontent.com/');
+      expect(result).not.toContain('/rest/api/3/attachment/content/999999');
+      expect(result).toContain('upload-test.png');
+
+      // Verify that fetch was called for image, comment creation, and comment deletion
+      expect(global.fetch).toHaveBeenCalledTimes(3); // 1 image + 1 comment creation + 1 comment deletion
+    } finally {
+      // Restore original fetch
+      global.fetch = originalFetch;
+    }
+  });
+
+  it('should fallback to base64 when GitHub upload fails', async () => {
+    const details: JIRADetails = {
+      key: 'ABC-123',
+      summary: 'Sample summary',
+      description: `<h4>Fallback Example</h4>
+<p>Here is an image that will use fallback:</p>
+<img src="/rest/api/3/attachment/content/999999" alt="fallback-test.png" />`,
+      url: 'example.com/ABC-123',
+      type: {
+        name: 'story',
+        icon: 'icon.png',
+      },
+      project: {
+        name: 'name',
+        url: 'url',
+        key: 'key',
+      },
+    };
+
+    // Mock fetch to return fake image data and GitHub API failure
+    const originalFetch = global.fetch;
+    global.fetch = jest.fn().mockImplementation((url: string) => {
+      if (url.includes('/rest/api/3/attachment/content/999999')) {
+        // Create a fake image
+        const imageData = Buffer.from('fake-image-data');
+
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          statusText: 'OK',
+          headers: new Map([['content-type', 'image/png']]) as any,
+          redirected: false,
+          type: 'default' as ResponseType,
+          url: url,
+          arrayBuffer: () => Promise.resolve(imageData.buffer),
+          body: null,
+          bodyUsed: false,
+          clone: () => new Response(),
+          formData: () => Promise.resolve(new FormData()),
+          json: () => Promise.resolve({}),
+          text: () => Promise.resolve(''),
+          blob: () => Promise.resolve(new Blob()),
+        } as Response);
+      } else if (url.includes('/issues/123/comments')) {
+        // Mock GitHub comment creation failure (403 - insufficient permissions)
+        return Promise.resolve({
+          ok: false,
+          status: 403,
+          json: () =>
+            Promise.resolve({
+              message: 'Resource not accessible by integration',
+              documentation_url: 'https://docs.github.com/rest',
+              status: '403',
+            }),
+        } as Response);
+      }
+      return originalFetch(url);
+    });
+
+    try {
+      const result = await buildPRDescription(details, 'https://jira.example.com', 'fake-token', 'github-token', 'owner', 'repo', 123);
+
+      // Verify that the image was embedded as base64 (fallback)
+      expect(result).toContain('data:image/png;base64,');
+      expect(result).not.toContain('/rest/api/3/attachment/content/999999');
+      expect(result).toContain('fallback-test.png');
+
+      // Verify that fetch was called for image and failed comment creation
+      expect(global.fetch).toHaveBeenCalledTimes(2); // 1 image + 1 failed comment creation
+    } finally {
+      // Restore original fetch
+      global.fetch = originalFetch;
+    }
+  });
+
+  it('should truncate PR description when it exceeds size limit', async () => {
+    const details: JIRADetails = {
+      key: 'ABC-123',
+      summary: 'Sample summary',
+      description: 'A'.repeat(70 * 1024), // 70KB description (exceeds 60KB limit)
+      url: 'example.com/ABC-123',
+      type: {
+        name: 'story',
+        icon: 'icon.png',
+      },
+      project: {
+        name: 'name',
+        url: 'url',
+        key: 'key',
+      },
+    };
+
+    const result = await buildPRDescription(details);
+
+    // Verify that the description was truncated
+    expect(result.length).toBeLessThanOrEqual(60 * 1024 + 1000); // Allow some buffer for HTML structure
+    expect(result).toContain('[Description truncated due to size limit]');
+    expect(result).toContain('ABC-123');
+  });
+
+  it('should handle large images within the 65,535 character comment limit', async () => {
+    const details: JIRADetails = {
+      key: 'ABC-123',
+      summary: 'Sample summary',
+      description: `<h4>Large Image Example</h4>
+<p>Here is a large image:</p>
+<img src="/rest/api/3/attachment/content/999999" alt="large-test.png" />`,
+      url: 'example.com/ABC-123',
+      type: {
+        name: 'story',
+        icon: 'icon.png',
+      },
+      project: {
+        name: 'name',
+        url: 'url',
+        key: 'key',
+      },
+    };
+
+    // Mock fetch to return a large image (but within limits)
+    const originalFetch = global.fetch;
+    global.fetch = jest.fn().mockImplementation((url: string) => {
+      if (url.includes('/rest/api/3/attachment/content/999999')) {
+        // Create a large image (40KB - within the 45KB limit for base64)
+        const imageData = Buffer.from('x'.repeat(40 * 1024));
+
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          statusText: 'OK',
+          headers: new Map([['content-type', 'image/png']]) as any,
+          redirected: false,
+          type: 'default' as ResponseType,
+          url: url,
+          arrayBuffer: () => Promise.resolve(imageData.buffer),
+          body: null,
+          bodyUsed: false,
+          clone: () => new Response(),
+          formData: () => Promise.resolve(new FormData()),
+          json: () => Promise.resolve({}),
+          text: () => Promise.resolve(''),
+          blob: () => Promise.resolve(new Blob()),
+        } as Response);
+      } else if (url.includes('/issues/123/comments')) {
+        // Mock GitHub comment creation response
+        return Promise.resolve({
+          ok: true,
+          status: 201,
+          json: () =>
+            Promise.resolve({
+              id: 12345,
+              body: '![large-test.png](https://user-images.githubusercontent.com/1234567890/large-test.png)',
+            }),
+        } as Response);
+      } else if (url.includes('/issues/comments/12345')) {
+        // Mock GitHub comment deletion response
+        return Promise.resolve({
+          ok: true,
+          status: 204,
+        } as Response);
+      }
+      return originalFetch(url);
+    });
+
+    try {
+      const result = await buildPRDescription(details, 'https://jira.example.com', 'fake-token', 'github-token', 'owner', 'repo', 123);
+
+      // Verify that the large image was uploaded via temporary comment
+      expect(result).toContain('https://user-images.githubusercontent.com/');
+      expect(result).not.toContain('data:image/png;base64,');
+      expect(result).toContain('large-test.png');
+
+      // Verify that fetch was called for image, comment creation, and comment deletion
+      expect(global.fetch).toHaveBeenCalledTimes(3);
+    } finally {
+      // Restore original fetch
+      global.fetch = originalFetch;
+    }
+  });
 });
