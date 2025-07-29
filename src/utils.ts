@@ -64,6 +64,7 @@ export const getPRDescription = (oldBody: string, details: string): string => {
 ${HIDDEN_MARKER_START}
 ${details}
 ${HIDDEN_MARKER_END}
+
 `;
   if (replaceDetailsRg.test(oldBody)) {
     return (oldBody ?? '').replace(replaceWarningMessageRg, '').replace(replaceDetailsRg, jiraDetailsMessage);
