@@ -69,6 +69,7 @@ describe('getPRDescription()', () => {
 ${HIDDEN_MARKER_START}
 ${issueInfo}
 ${HIDDEN_MARKER_END}
+
 ${oldPRBody}`);
   });
 
@@ -83,6 +84,7 @@ ${oldPRBody}`);
 ${HIDDEN_MARKER_START}
 ${issueInfo}
 ${HIDDEN_MARKER_END}
+
 ${oldPRBodyInformation}`);
   });
 
@@ -98,6 +100,7 @@ ${oldPRBodyInformation}`);
 ${HIDDEN_MARKER_START}
 ${issueInfo}
 ${HIDDEN_MARKER_END}
+
 ${oldPRBodyInformation}`);
   });
 
@@ -108,6 +111,7 @@ ${WARNING_MESSAGE_ABOUT_HIDDEN_MARKERS}
 ${HIDDEN_MARKER_START}
 ${issueInfo}
 ${HIDDEN_MARKER_END}
+
 this is text below the markers`;
     const description = getPRDescription(oldPRDescription, issueInfo);
     expect(description).toEqual(oldPRDescription);

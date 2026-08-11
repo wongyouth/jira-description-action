@@ -58,7 +58,7 @@ export const getPRDescription = (oldBody: string, details: string): string => {
   const hiddenMarkerEndRg = escapeRegexp(HIDDEN_MARKER_END);
   const warningMsgRg = escapeRegexp(WARNING_MESSAGE_ABOUT_HIDDEN_MARKERS);
 
-  const replaceDetailsRg = new RegExp(`${hiddenMarkerStartRg}([\\s\\S]+)${hiddenMarkerEndRg}[\\s]?`, 'igm');
+  const replaceDetailsRg = new RegExp(`${hiddenMarkerStartRg}([\\s\\S]+)${hiddenMarkerEndRg}\\n*`, 'igm');
   const replaceWarningMessageRg = new RegExp(`${warningMsgRg}[\\s]?`, 'igm');
   const jiraDetailsMessage = `${WARNING_MESSAGE_ABOUT_HIDDEN_MARKERS}
 ${HIDDEN_MARKER_START}
